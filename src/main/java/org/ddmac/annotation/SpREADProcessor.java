@@ -10,9 +10,9 @@ import java.util.Set;
 
 @SupportedAnnotationTypes("ord.ddmac.annotation.ReactiveEndpoint")
 @SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)
-public class ReactiveEndpointProcessor extends AbstractProcessor {
-    private final String ROUTER_SUFFIX = "ReactiveEndpointRouterImpl";
-    private final String HANDLER_SUFFIX = "ReactiveEndpointHandlerImpl";
+public class SpREADProcessor extends AbstractProcessor {
+    private final String ROUTER_SUFFIX = "SpREADRouterImpl";
+    private final String HANDLER_SUFFIX = "SpREADReactiveEndpointHandlerImpl";
     
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -39,7 +39,7 @@ public class ReactiveEndpointProcessor extends AbstractProcessor {
         String packageQName = processingEnv.getElementUtils().getPackageOf(cls).getQualifiedName().toString();
         String routerClassName = cls.getSimpleName() + ROUTER_SUFFIX;
         String handlerClassName = cls.getSimpleName() + HANDLER_SUFFIX;
-        String reqPath = cls.getAnnotation(ReactiveEndpoint.class).path();
+        String reqPath = cls.getAnnotation(SpREAD.class).path();
         StringBuilder body = new StringBuilder();
         body.append("package ").append(packageQName).append(".").append(handlerClassName).append(";\n\n"); //import full package of handler class
         body.append("import ").append(packageQName).append(".").append(cls.getSimpleName()).append(";\n");

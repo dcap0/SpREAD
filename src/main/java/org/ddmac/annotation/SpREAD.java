@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
-public @interface ReactiveEndpoint {
+public @interface SpREAD {
     String path() default "/";
 }
