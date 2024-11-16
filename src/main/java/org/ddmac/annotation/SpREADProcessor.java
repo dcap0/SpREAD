@@ -12,7 +12,7 @@ import java.util.Set;
 @SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)
 public class SpREADProcessor extends AbstractProcessor {
     private final String ROUTER_SUFFIX = "SpREADRouterImpl";
-    private final String HANDLER_SUFFIX = "SpREADReactiveEndpointHandlerImpl";
+    private final String HANDLER_SUFFIX = "SpREADHandlerImpl";
     
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -50,7 +50,7 @@ public class SpREADProcessor extends AbstractProcessor {
 
         body.append("public class ").append(routerClassName).append("{\n\n");
 
-        body.append("   private String path =").append(reqPath).append(";\n\n");
+        body.append("   private String path =\"").append(reqPath).append("\";\n\n");
 
         body.append("   @Bean\n");
         body.append("   RouterFunction<ServerResponse> routeBase(").append(handlerClassName).append(" handler").append("){\n");
@@ -105,17 +105,19 @@ body.append("}\n")
         body.append("import java.util.Map;\n");
         body.append("import java.util.Objects;\n\n");
 
-        body.append("@Supresswarning(\"unchecked\")\n");
+        body.append("@SuppressWarnings(\"unchecked\")\n");
 
         body.append("public class ").append(handlerClassName).append("{\n\n");
+
+        body.append("HashMap<String,String> payload = new HashMap<>();\n");
 
         body
                 .append("   public Mono<ServerResponse> getAll(ServerRequest serverRequest){\n")
                 .append("       return ServerResponse\n")
                 .append("           .ok()\n")
                 .append("           .contentType(MediaType.APPLICATION_JSON)\n")
-                .append("           .body(BodyInserters.fromValue(\"{\"hello\";\"world\"}\"))")
-                .append("   }");
+                .append("           .body(BodyInserters.fromValue(payload));")
+                .append("   }\n\n");
 //        body.append("Mono<ServerResponse> checkId(ServerRequest request){\n");
 //        body.append("if(request.queryParam(\"id\").isEmpty()){\n");
 //        body.append("return ServerResponse\n");
