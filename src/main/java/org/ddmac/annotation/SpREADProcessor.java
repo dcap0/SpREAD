@@ -13,6 +13,8 @@ import java.util.Set;
 public class SpREADProcessor extends AbstractProcessor {
     private final String ROUTER_SUFFIX = "SpREADRouterImpl";
     private final String HANDLER_SUFFIX = "SpREADHandlerImpl";
+
+    private final String PACKAGE_SUFFIX = ".spread";
     
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -36,18 +38,26 @@ public class SpREADProcessor extends AbstractProcessor {
     }
 
     private void generateRouter(Element cls) {
-        String packageQName = processingEnv.getElementUtils().getPackageOf(cls).getQualifiedName().toString();
+        String spreadPackage = processingEnv
+                .getElementUtils()
+                .getPackageOf(cls)
+                .getQualifiedName()
+                .toString() + PACKAGE_SUFFIX;
         String routerClassName = cls.getSimpleName() + ROUTER_SUFFIX;
         String handlerClassName = cls.getSimpleName() + HANDLER_SUFFIX;
         String reqPath = cls.getAnnotation(SpREAD.class).path();
         StringBuilder body = new StringBuilder();
-        body.append("package ").append(packageQName).append(".").append(handlerClassName).append(";\n\n"); //import full package of handler class
-        body.append("import ").append(packageQName).append(".").append(cls.getSimpleName()).append(";\n");
+        body.append("package ").append(spreadPackage).append(";\n\n"); //import full package of handler class
+        body.append("import ").append(spreadPackage).append(".").append(handlerClassName).append(";\n");
         body.append("import org.springframework.context.annotation.Bean;\n");
+        body.append("import org.springframework.context.annotation.Configuration;\n");
         body.append("import org.springframework.web.reactive.function.server.RouterFunction;\n");
         body.append("import org.springframework.web.reactive.function.server.RouterFunctions;\n");
         body.append("import org.springframework.web.reactive.function.server.ServerResponse;\n\n");
 
+        body.append("import static org.springframework.web.reactive.function.server.RequestPredicates.GET;\n\n");
+
+        body.append("@Configuration(proxyBeanMethods = false)\n");
         body.append("public class ").append(routerClassName).append("{\n\n");
 
         body.append("   private String path =\"").append(reqPath).append("\";\n\n");
@@ -65,7 +75,7 @@ public class SpREADProcessor extends AbstractProcessor {
 
         try {
             Writer writer = processingEnv.getFiler()
-                    .createSourceFile(packageQName + "." + routerClassName)
+                    .createSourceFile(spreadPackage + "." + routerClassName)
                     .openWriter();
             writer.write(body.toString());
             writer.close();
@@ -88,12 +98,17 @@ body.append("}\n")
     */
 
     private void generateHandler(Element cls) {
-        String packageQName = processingEnv.getElementUtils().getPackageOf(cls).getQualifiedName().toString();
+        String spreadPackage = processingEnv
+                .getElementUtils()
+                .getPackageOf(cls)
+                .getQualifiedName()
+                .toString() + PACKAGE_SUFFIX;
         String handlerClassName = cls.getSimpleName() + HANDLER_SUFFIX;
 
         StringBuilder body = new StringBuilder();
-        body.append("package ").append(packageQName).append(";\n\n");
+        body.append("package ").append(spreadPackage).append(";\n\n");
 
+        body.append("import org.springframework.stereotype.Component;\n");
         body.append("import org.springframework.data.jpa.repository.JpaRepository;\n");
         body.append("import org.springframework.http.MediaType;\n");
         body.append("import org.springframework.web.reactive.function.BodyInserters;\n");
@@ -105,11 +120,12 @@ body.append("}\n")
         body.append("import java.util.Map;\n");
         body.append("import java.util.Objects;\n\n");
 
+        body.append("@Component\n");
         body.append("@SuppressWarnings(\"unchecked\")\n");
-
         body.append("public class ").append(handlerClassName).append("{\n\n");
 
-        body.append("HashMap<String,String> payload = new HashMap<>();\n");
+        body.append("String payload = \"Hello, World!\";\n");
+
 
         body
                 .append("   public Mono<ServerResponse> getAll(ServerRequest serverRequest){\n")
@@ -140,7 +156,7 @@ body.append("}\n")
 
         try {
             Writer writer = processingEnv.getFiler()
-                    .createSourceFile(packageQName + "." + handlerClassName)
+                    .createSourceFile(spreadPackage + "." + handlerClassName)
                     .openWriter();
             writer.write(body.toString());
             writer.close();
