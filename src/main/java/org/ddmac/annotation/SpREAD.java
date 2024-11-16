@@ -18,6 +18,8 @@ import java.lang.annotation.*;
  *      public class ExampleClass { ... }
  *      }
  *  </pre>
+ *
+ * @author Dennis Capone
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)

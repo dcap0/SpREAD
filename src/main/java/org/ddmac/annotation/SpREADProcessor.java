@@ -11,6 +11,8 @@ import java.util.Set;
 
 /**
  * Class that generates the Reactive Router and Handler at compile time.
+ *
+ * @author Dennis Capone
  */
 @SupportedAnnotationTypes("org.ddmac.annotation.SpREAD")
 @SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)
