@@ -1,2 +1,2 @@
-rootProject.name = "ReactiveEndpointAnnotation"
+rootProject.name = "SpREAD"
 

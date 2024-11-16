@@ -8,7 +8,7 @@ import java.io.Writer;
 import java.util.HashSet;
 import java.util.Set;
 
-@SupportedAnnotationTypes("ord.ddmac.annotation.ReactiveEndpoint")
+@SupportedAnnotationTypes("org.ddmac.annotation.SpREAD")
 @SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)
 public class SpREADProcessor extends AbstractProcessor {
     private final String ROUTER_SUFFIX = "SpREADRouterImpl";

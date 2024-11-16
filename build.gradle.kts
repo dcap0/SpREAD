@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "org.ddmac"
-version = "v0.0.7"
+version = "v0.0.11"
 
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
