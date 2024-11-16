@@ -8,6 +8,10 @@ import java.io.Writer;
 import java.util.HashSet;
 import java.util.Set;
 
+
+/**
+ * Class that generates the Reactive Router and Handler at compile time.
+ */
 @SupportedAnnotationTypes("org.ddmac.annotation.SpREAD")
 @SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)
 public class SpREADProcessor extends AbstractProcessor {
@@ -18,9 +22,7 @@ public class SpREADProcessor extends AbstractProcessor {
     
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-
         Set<Element> elements = new HashSet<>();
-
         annotations.forEach((annotation) -> {
             elements.addAll(roundEnv.getElementsAnnotatedWith(annotation));
         });
