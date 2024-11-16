@@ -41,6 +41,10 @@ public class SpREADProcessor extends AbstractProcessor {
         return true;
     }
 
+    /**
+     * Creates the router file.
+     * @param cls The annotated class Element.
+     */
     private void generateRouter(Element cls) {
         String spreadPackage = processingEnv
                 .getElementUtils()
@@ -101,6 +105,10 @@ body.append("return null;\n")
 body.append("}\n")
     */
 
+    /**
+     * Creates the handler file.
+     * @param cls The annotated class Element.
+     */
     private void generateHandler(Element cls) {
         String spreadPackage = processingEnv
                 .getElementUtils()

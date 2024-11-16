@@ -9,9 +9,6 @@ import java.lang.annotation.*;
  * Generates a basic Reactive Router and a handler
  * with a GET, POST, PUT, and DELETE function targeting the "id" field.
  *
- *  Parameters:
- *  - path: Sets the path for the endpoint.
- *
  *  <pre>
  *      {@code
  *      @SpREAD(path="/example")
@@ -24,5 +21,11 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
 @Documented public @interface SpREAD {
+
+    /**
+     * Optional element used to define the Reactive REST API path
+     *
+     * @return String
+     */
     String path() default "/";
 }
