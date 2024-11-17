@@ -3,10 +3,17 @@ package org.ddmac.annotation;
 import javax.annotation.processing.*;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.Array;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
 
 /**
@@ -17,9 +24,10 @@ import java.util.Set;
 @SupportedAnnotationTypes("org.ddmac.annotation.SpREAD")
 @SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)
 public class SpREADProcessor extends AbstractProcessor {
+
+    private final String JPA_FQN = "org.springframework.data.jpa.repository.JpaRepository";
     private final String ROUTER_SUFFIX = "SpREADRouterImpl";
     private final String HANDLER_SUFFIX = "SpREADHandlerImpl";
-
     private final String PACKAGE_SUFFIX = ".spread";
     
     @Override
@@ -29,10 +37,25 @@ public class SpREADProcessor extends AbstractProcessor {
             elements.addAll(roundEnv.getElementsAnnotatedWith(annotation));
         });
 
-        elements.forEach((cls) -> {
-            if(cls.getKind().isClass()) {
-                generateRouter(cls);
-                generateHandler(cls);
+        elements.forEach((element) -> {
+            if(element.getKind().isClass()) {
+                try {
+                    Class<?> cls = Class.forName(((DeclaredType) element.asType()).toString());
+                    if(doesAnnotatedClassInheritJpaRepo(cls)){
+                        String clsPackage = processingEnv
+                                .getElementUtils()
+                                .getPackageOf(element)
+                                .getQualifiedName()
+                                .toString() + PACKAGE_SUFFIX;
+                        String repoSimpleName = cls.getSimpleName();
+                        String entityName = getRepoEntity(cls).getSimpleName();
+                        String reqPath = element.getAnnotation(SpREAD.class).path();
+                        generateRouter(clsPackage,entityName,reqPath);
+                        generateHandler(clsPackage,repoSimpleName,entityName);
+                    }
+                } catch (ClassNotFoundException cne) {
+                    cne.printStackTrace();
+                }
             }
         });
 
@@ -43,17 +66,14 @@ public class SpREADProcessor extends AbstractProcessor {
 
     /**
      * Creates the router file.
-     * @param cls The annotated class Element.
+     * @param clsPackage The package of the class being processed.
+     * @param entityName Name of the entity type parameter of the repository. Used in naming the generated class.
+     * @param reqPath Path that the endpoint will have.
      */
-    private void generateRouter(Element cls) {
-        String spreadPackage = processingEnv
-                .getElementUtils()
-                .getPackageOf(cls)
-                .getQualifiedName()
-                .toString() + PACKAGE_SUFFIX;
-        String routerClassName = cls.getSimpleName() + ROUTER_SUFFIX;
-        String handlerClassName = cls.getSimpleName() + HANDLER_SUFFIX;
-        String reqPath = cls.getAnnotation(SpREAD.class).path();
+    private void generateRouter(String clsPackage, String entityName, String reqPath) {
+        String spreadPackage = clsPackage + PACKAGE_SUFFIX;
+        String routerClassName = entityName + ROUTER_SUFFIX;
+        String handlerClassName = entityName + HANDLER_SUFFIX;
         StringBuilder body = new StringBuilder();
         body.append("package ").append(spreadPackage).append(";\n\n"); //import full package of handler class
         body.append("import ").append(spreadPackage).append(".").append(handlerClassName).append(";\n");
@@ -107,19 +127,18 @@ body.append("}\n")
 
     /**
      * Creates the handler file.
-     * @param cls The annotated class Element.
+     * @param clsPackage Package of the class being processed.
+     * @param repoSimpleName Simple name of the repository.
+     * @param entityName Name of the entity type parameter of the repository. Used in naming generated class.
      */
-    private void generateHandler(Element cls) {
-        String spreadPackage = processingEnv
-                .getElementUtils()
-                .getPackageOf(cls)
-                .getQualifiedName()
-                .toString() + PACKAGE_SUFFIX;
-        String handlerClassName = cls.getSimpleName() + HANDLER_SUFFIX;
+    private void generateHandler(String clsPackage, String repoSimpleName, String entityName) {
+        String spreadPackage = clsPackage + PACKAGE_SUFFIX;
+        String handlerClassName = entityName + HANDLER_SUFFIX;
 
         StringBuilder body = new StringBuilder();
         body.append("package ").append(spreadPackage).append(";\n\n");
 
+        body.append("import ").append(clsPackage).append(".").append(repoSimpleName).append(";\n");
         body.append("import org.springframework.stereotype.Component;\n");
         body.append("import org.springframework.data.jpa.repository.JpaRepository;\n");
         body.append("import org.springframework.http.MediaType;\n");
@@ -136,16 +155,17 @@ body.append("}\n")
         body.append("@SuppressWarnings(\"unchecked\")\n");
         body.append("public class ").append(handlerClassName).append("{\n\n");
 
-        body.append("String payload = \"Hello, World!\";\n");
-
+        body.append("   @Autowired");
+        body.append("   ").append(repoSimpleName).append(" repo;\n\n");
 
         body
                 .append("   public Mono<ServerResponse> getAll(ServerRequest serverRequest){\n")
                 .append("       return ServerResponse\n")
                 .append("           .ok()\n")
                 .append("           .contentType(MediaType.APPLICATION_JSON)\n")
-                .append("           .body(BodyInserters.fromValue(payload));")
+                .append("           .body(BodyInserters.fromValue(repo.findAll()));")
                 .append("   }\n\n");
+
 //        body.append("Mono<ServerResponse> checkId(ServerRequest request){\n");
 //        body.append("if(request.queryParam(\"id\").isEmpty()){\n");
 //        body.append("return ServerResponse\n");
@@ -176,4 +196,72 @@ body.append("}\n")
             e.printStackTrace();
         }
     }
+
+
+    /**
+     * Used to turn an instance of a Type into a reference of the Class it represents.
+     *
+     * @param type Reflecting a class.
+     * @return Class reference that the type represents.
+     */
+    private Class<?> typeToClass(Type type){
+        switch (type) {
+            case Class<?> c -> {
+                return c;
+            }
+            case ParameterizedType pt -> {
+                return typeToClass(pt);
+            }
+            case GenericArrayType gat -> {
+                Class<?> ac = typeToClass(gat.getGenericComponentType());
+                if (ac != null){
+                    return Array.newInstance(ac,0).getClass();
+                }
+                return null;
+            }
+            case null, default -> {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Gets the class reference of an Entity that is a Type Parameter
+     * for the annotated JpaRepository subclass.
+     *
+     * @param repoClass Class reference of the repository subclass
+     * @return Class reference of the repository's entity.
+     */
+    private Class<?> getRepoEntity(Class<?> repoClass){
+        Type jpa = Arrays
+                .stream(repoClass.getGenericInterfaces())
+                .filter(type -> type instanceof ParameterizedType)
+                .filter((type) -> ((ParameterizedType) type).getRawType().getTypeName().equals(JPA_FQN))
+                .findFirst().orElseThrow();
+
+        return typeToClass(
+                ((ParameterizedType) jpa).getActualTypeArguments()[0]
+        );
+    }
+
+    /**
+     * Checks if the passed class has directly inherited from the JpaRepository class.
+     *
+     * @param cls The class reference to be checked.
+     * @return boolean. Does it?
+     */
+    private boolean doesAnnotatedClassInheritJpaRepo(Class<?> cls){
+        for (Type genInterface : cls.getGenericInterfaces()) {
+            if (genInterface instanceof ParameterizedType) {
+                String interfaceName = ((ParameterizedType) genInterface).getRawType().getTypeName();
+                if (interfaceName.equals(JPA_FQN)) {
+                    return true;
+                }
+
+            }
+        }
+
+        return false;
+    }
+    
 }
