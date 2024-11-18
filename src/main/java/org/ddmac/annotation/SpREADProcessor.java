@@ -5,18 +5,11 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.io.Writer;
-import java.lang.reflect.Array;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 
 /**
@@ -203,7 +196,12 @@ body.append("}\n")
         }
     }
 
-
+    /**
+     * Gets the super class of the annotated repository and gets the
+     * Entity via TypeMirror
+     * @param element The annotated interface
+     * @return The fully qualified name of the entity.
+     */
     private String getRepoEntity(Element element){
         String[] fqn = ((DeclaredType) processingEnv
                     .getTypeUtils()
@@ -219,6 +217,12 @@ body.append("}\n")
     }
 
 
+    /**
+     * Confirms that the annotated interface directly inherits from JpaRepository
+     *
+     * @param element The annotated interface
+     * @return boolean. Does it??
+     */
     private boolean doesAnnotatedClassInheritJpaRepo(Element element) {
 
         List<? extends TypeMirror> mirrors = processingEnv.getTypeUtils().directSupertypes(element.asType());
