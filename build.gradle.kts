@@ -1,6 +1,5 @@
 plugins {
     id("java-library")
-    id("org.jetbrains.dokka") version "1.9.20"
 }
 
 group = "org.ddmac"
