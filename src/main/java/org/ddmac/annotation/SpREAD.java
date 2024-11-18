@@ -5,7 +5,7 @@ import java.lang.annotation.*;
 
 /**
  * Spring Reactive Endpoint, Annotation Derived
- * A class annotation to be used on an @Entity class.
+ * A class annotation to be used on an Interface that inherits JpaRepository.
  * Generates a basic Reactive Router and a handler
  * with a GET, POST, PUT, and DELETE function targeting the "id" field.
  *
