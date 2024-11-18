@@ -58,7 +58,7 @@ public class SpREADProcessor extends AbstractProcessor {
     /**
      * Creates the router file.
      *
-     * @param rd RepositoryData: Record containing metadata needed to generate the Router
+     * @param rd RepositoryData: Record containing metadata needed to generate the Router.
      */
     private void generateRouter(RepositoryData rd) {
         String spreadPackage = rd.interfacePackage() + PACKAGE_SUFFIX;
@@ -118,7 +118,7 @@ body.append("}\n")
     /**
      * Creates the handler file.
      *
-     * @param rd RepositoryData: Record containing metadata needed to generate the Router
+     * @param rd RepositoryData: Record containing metadata needed to generate the Router.
      */
     private void generateHandler(
             RepositoryData rd
@@ -194,8 +194,8 @@ body.append("}\n")
 
     /**
      * Gets the super class of the annotated repository and gets the
-     * Entity via TypeMirror
-     * @param element The annotated interface
+     * Entity via TypeMirror.
+     * @param element The annotated interface.
      * @return The fully qualified name of the entity.
      */
     private String getRepoEntity(Element element){
@@ -214,9 +214,9 @@ body.append("}\n")
 
 
     /**
-     * Confirms that the annotated interface directly inherits from JpaRepository
+     * Confirms that the annotated interface directly inherits from JpaRepository.
      *
-     * @param element The annotated interface
+     * @param element The annotated interface.
      * @return boolean. Does it??
      */
     private boolean doesAnnotatedClassInheritJpaRepo(Element element) {
@@ -237,8 +237,8 @@ body.append("}\n")
      * Extracts metadata about the annotated repository Interface from
      * the Element class.
      *
-     * @param element Interface's Element
-     * @return RepositoryData containing relevant information to generating Router/Handler
+     * @param element Interface's Element.
+     * @return RepositoryData containing relevant information to generating Router/Handler.
      */
     private RepositoryData repositoryDataFromElement(Element element){
         return new RepositoryData(
@@ -257,8 +257,8 @@ body.append("}\n")
     /**
      * Checks the serializer the user provides, and returns their respective serialization.
      *
-     * @param s Serializer provided by user
-     * @return String
+     * @param s Serializer provided by user.
+     * @return String.
      */
     private String getSerializerStatement(Serializer s){
         switch(s){

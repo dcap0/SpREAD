@@ -6,7 +6,7 @@ import java.lang.annotation.*;
 
 
 /**
- * Spring Reactive Endpoint, Annotation Derived
+ * Spring Reactive Endpoint, Annotation Derived:
  * A class annotation to be used on an Interface that inherits JpaRepository.
  * Generates a basic Reactive Router and a handler
  * with a GET, POST, PUT, and DELETE function targeting the "id" field.
@@ -25,7 +25,7 @@ import java.lang.annotation.*;
 @Documented public @interface SpREAD {
 
     /**
-     * Optional element used to define the Reactive REST API path
+     * Optional element used to define the Reactive REST API path.
      *
      * @return String
      */
