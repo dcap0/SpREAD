@@ -30,5 +30,11 @@ import java.lang.annotation.*;
      * @return String
      */
     String path() default "/";
-    Serializer serializer() default Serializer.GSON;
+
+    /**
+     * Optional element used to provide implemented serializer.
+     *
+     * @return Serializer
+     */
+    Serializer serializer() default Serializer.JACKSON;
 }
