@@ -4,6 +4,8 @@ import javax.annotation.processing.*;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Array;
@@ -12,6 +14,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -29,7 +32,12 @@ public class SpREADProcessor extends AbstractProcessor {
     private final String ROUTER_SUFFIX = "SpREADRouterImpl";
     private final String HANDLER_SUFFIX = "SpREADHandlerImpl";
     private final String PACKAGE_SUFFIX = ".spread";
-    
+
+    @Override
+    public synchronized void init(ProcessingEnvironment processingEnv) {
+        super.init(processingEnv);
+    }
+
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<Element> elements = new HashSet<>();
@@ -38,27 +46,21 @@ public class SpREADProcessor extends AbstractProcessor {
         });
 
         elements.forEach((element) -> {
-            if(element.getKind().isClass()) {
-                try {
-                    Class<?> cls = Class.forName(((DeclaredType) element.asType()).toString());
-                    if(doesAnnotatedClassInheritJpaRepo(cls)){
+            if (element.getKind().isInterface()) {
+                    if (doesAnnotatedClassInheritJpaRepo(element)) {
                         String clsPackage = processingEnv
                                 .getElementUtils()
                                 .getPackageOf(element)
                                 .getQualifiedName()
-                                .toString() + PACKAGE_SUFFIX;
-                        String repoSimpleName = cls.getSimpleName();
-                        String entityName = getRepoEntity(cls).getSimpleName();
+                                .toString();
+                        String repoSimpleName = element.getSimpleName().toString();
+                        String entityName = getRepoEntity(element);
                         String reqPath = element.getAnnotation(SpREAD.class).path();
-                        generateRouter(clsPackage,entityName,reqPath);
-                        generateHandler(clsPackage,repoSimpleName,entityName);
+                        generateRouter(clsPackage, entityName, reqPath);
+                        generateHandler(clsPackage, repoSimpleName, entityName);
                     }
-                } catch (ClassNotFoundException cne) {
-                    cne.printStackTrace();
-                }
             }
         });
-
 
 
         return true;
@@ -66,9 +68,10 @@ public class SpREADProcessor extends AbstractProcessor {
 
     /**
      * Creates the router file.
+     *
      * @param clsPackage The package of the class being processed.
      * @param entityName Name of the entity type parameter of the repository. Used in naming the generated class.
-     * @param reqPath Path that the endpoint will have.
+     * @param reqPath    Path that the endpoint will have.
      */
     private void generateRouter(String clsPackage, String entityName, String reqPath) {
         String spreadPackage = clsPackage + PACKAGE_SUFFIX;
@@ -127,9 +130,10 @@ body.append("}\n")
 
     /**
      * Creates the handler file.
-     * @param clsPackage Package of the class being processed.
+     *
+     * @param clsPackage     Package of the class being processed.
      * @param repoSimpleName Simple name of the repository.
-     * @param entityName Name of the entity type parameter of the repository. Used in naming generated class.
+     * @param entityName     Name of the entity type parameter of the repository. Used in naming generated class.
      */
     private void generateHandler(String clsPackage, String repoSimpleName, String entityName) {
         String spreadPackage = clsPackage + PACKAGE_SUFFIX;
@@ -139,6 +143,8 @@ body.append("}\n")
         body.append("package ").append(spreadPackage).append(";\n\n");
 
         body.append("import ").append(clsPackage).append(".").append(repoSimpleName).append(";\n");
+        body.append("import ").append(clsPackage).append(".").append(entityName).append(";\n");
+        body.append("import org.springframework.beans.factory.annotation.Autowired;\n");
         body.append("import org.springframework.stereotype.Component;\n");
         body.append("import org.springframework.data.jpa.repository.JpaRepository;\n");
         body.append("import org.springframework.http.MediaType;\n");
@@ -155,7 +161,7 @@ body.append("}\n")
         body.append("@SuppressWarnings(\"unchecked\")\n");
         body.append("public class ").append(handlerClassName).append("{\n\n");
 
-        body.append("   @Autowired");
+        body.append("   @Autowired\n");
         body.append("   ").append(repoSimpleName).append(" repo;\n\n");
 
         body
@@ -163,7 +169,7 @@ body.append("}\n")
                 .append("       return ServerResponse\n")
                 .append("           .ok()\n")
                 .append("           .contentType(MediaType.APPLICATION_JSON)\n")
-                .append("           .body(BodyInserters.fromValue(repo.findAll()));")
+                .append("           .body(BodyInserters.fromValue(repo.findAll().toString()));\n")
                 .append("   }\n\n");
 
 //        body.append("Mono<ServerResponse> checkId(ServerRequest request){\n");
@@ -198,70 +204,34 @@ body.append("}\n")
     }
 
 
-    /**
-     * Used to turn an instance of a Type into a reference of the Class it represents.
-     *
-     * @param type Reflecting a class.
-     * @return Class reference that the type represents.
-     */
-    private Class<?> typeToClass(Type type){
-        switch (type) {
-            case Class<?> c -> {
-                return c;
-            }
-            case ParameterizedType pt -> {
-                return typeToClass(pt);
-            }
-            case GenericArrayType gat -> {
-                Class<?> ac = typeToClass(gat.getGenericComponentType());
-                if (ac != null){
-                    return Array.newInstance(ac,0).getClass();
-                }
-                return null;
-            }
-            case null, default -> {
-                return null;
-            }
-        }
+    private String getRepoEntity(Element element){
+        String[] fqn = ((DeclaredType) processingEnv
+                    .getTypeUtils()
+                    .directSupertypes(element.asType())
+                    .stream()
+                    .filter(type -> type.toString().contains(JPA_FQN))
+                    .findFirst()
+                    .orElseThrow())
+                .getTypeArguments()
+                .getFirst()
+                .toString().split("\\.");
+        return fqn[fqn.length-1];
     }
 
-    /**
-     * Gets the class reference of an Entity that is a Type Parameter
-     * for the annotated JpaRepository subclass.
-     *
-     * @param repoClass Class reference of the repository subclass
-     * @return Class reference of the repository's entity.
-     */
-    private Class<?> getRepoEntity(Class<?> repoClass){
-        Type jpa = Arrays
-                .stream(repoClass.getGenericInterfaces())
-                .filter(type -> type instanceof ParameterizedType)
-                .filter((type) -> ((ParameterizedType) type).getRawType().getTypeName().equals(JPA_FQN))
-                .findFirst().orElseThrow();
 
-        return typeToClass(
-                ((ParameterizedType) jpa).getActualTypeArguments()[0]
-        );
-    }
+    private boolean doesAnnotatedClassInheritJpaRepo(Element element) {
 
-    /**
-     * Checks if the passed class has directly inherited from the JpaRepository class.
-     *
-     * @param cls The class reference to be checked.
-     * @return boolean. Does it?
-     */
-    private boolean doesAnnotatedClassInheritJpaRepo(Class<?> cls){
-        for (Type genInterface : cls.getGenericInterfaces()) {
-            if (genInterface instanceof ParameterizedType) {
-                String interfaceName = ((ParameterizedType) genInterface).getRawType().getTypeName();
-                if (interfaceName.equals(JPA_FQN)) {
-                    return true;
-                }
+        List<? extends TypeMirror> mirrors = processingEnv.getTypeUtils().directSupertypes(element.asType());
 
+        for(int i = 0; i < mirrors.size(); i++){
+            if(mirrors.get(i).toString().contains(JPA_FQN)){
+                return true;
             }
         }
 
         return false;
+
     }
-    
+
+
 }
