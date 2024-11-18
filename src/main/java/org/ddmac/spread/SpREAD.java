@@ -14,7 +14,7 @@ import java.lang.annotation.*;
  *  <pre>
  *      {@code
  *      @SpREAD(path="/example")
- *      public class ExampleClass { ... }
+ *      public interface ExampleClass extends JpaRepository<?,?> { ... }
  *      }
  *  </pre>
  *
