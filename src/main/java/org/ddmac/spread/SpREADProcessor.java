@@ -108,7 +108,7 @@ body.append("if(request.queryParam("id").isEmpty()){\n")
 body.append("return ServerResponse\n")
 body.append(".badRequest()\n")
 body.append(".body(\n")
-body.append("BodyInserters.fromValue(\"Invalid request\")\n")
+body.append("BodyInserters  .fromValue(\"Invalid request\")\n")
 body.append(");\n")
 body.append("}\n")
 body.append("return null;\n")
@@ -131,6 +131,7 @@ body.append("}\n")
 
         body.append("import ").append(rd.interfacePackage()).append(".").append(rd.repoSimpleName()).append(";\n");
         body.append("import ").append(rd.interfacePackage()).append(".").append(rd.entityName()).append(";\n");
+        addSerializerImports(body,rd.serializer());
         body.append("import org.springframework.beans.factory.annotation.Autowired;\n");
         body.append("import org.springframework.stereotype.Component;\n");
         body.append("import org.springframework.data.jpa.repository.JpaRepository;\n");
@@ -138,7 +139,8 @@ body.append("}\n")
         body.append("import org.springframework.web.reactive.function.BodyInserters;\n");
         body.append("import org.springframework.web.reactive.function.server.ServerRequest;\n");
         body.append("import org.springframework.web.reactive.function.server.ServerResponse;\n");
-        body.append("import reactor.core.publisher.Mono;\n");
+        body.append("import reactor.core.publisher.Mono;\n\n");
+
 
         body.append("import java.util.HashMap;\n");
         body.append("import java.util.Map;\n");
@@ -156,7 +158,7 @@ body.append("}\n")
                 .append("       return ServerResponse\n")
                 .append("           .ok()\n")
                 .append("           .contentType(MediaType.APPLICATION_JSON)\n")
-                .append("           .body(BodyInserters.fromValue(repo.findAll().toString()));\n")
+                .append("           .body(").append(String.format(getSerializerStatement(rd.serializer()), "repo.findAll()")).append(");\n")
                 .append("   }\n\n");
 
 //        body.append("Mono<ServerResponse> checkId(ServerRequest request){\n");
@@ -250,5 +252,46 @@ body.append("}\n")
                 element.getAnnotation(SpREAD.class).path(),
                 element.getAnnotation(SpREAD.class).serializer()
         );
+    }
+
+    /**
+     * Checks the serializer the user provides, and returns their respective serialization.
+     *
+     * @param s Serializer provided by user
+     * @return String
+     */
+    private String getSerializerStatement(Serializer s){
+        switch(s){
+            case GSON -> {
+                return "BodyInserters.fromValue(new Gson().toJson(%s))";
+            }
+            case KOTLIN -> {
+                return "BodyInserters.fromValue(Json.encodeToString(%s))";
+            }
+            case null, default -> {
+                return "BodyInserters.fromValue(%s)";
+            }
+        }
+    }
+
+    /**
+     * Adds the correct import statements depending on the user's serializer.
+     *
+     * @param sb StringBuilder that is building out the handler body.
+     * @param serializer Serializer provided by user.
+     */
+    private void addSerializerImports(StringBuilder sb, Serializer serializer){
+        switch (serializer){
+            case GSON -> {
+                 sb.append("import com.google.gson.Gson;\n");
+            }
+            case KOTLIN -> {
+                sb.append("import kotlinx.serialization.*\n;");
+                sb.append("import kotlinx.serialization.json.*\n;");
+            }
+            case null, default -> { //already handled by spring
+            }
+        }
+
     }
 }
