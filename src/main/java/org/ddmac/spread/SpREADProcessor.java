@@ -20,7 +20,7 @@ import java.util.Set;
  *
  * @author Dennis Capone
  */
-@SupportedAnnotationTypes("org.ddmac.annotation.SpREAD")
+@SupportedAnnotationTypes("org.ddmac.spread.SpREAD")
 @SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)
 public class SpREADProcessor extends AbstractProcessor {
 
