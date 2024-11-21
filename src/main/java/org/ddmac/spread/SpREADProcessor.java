@@ -84,7 +84,7 @@ public class SpREADProcessor extends AbstractProcessor {
         body.append("   RouterFunction<ServerResponse> routeBase(").append(handlerClassName).append(" handler").append("){\n");
         body.append("       return RouterFunctions\n");
         body.append("           .route(GET(this.path),handler::getAll);\n");
-//        body.append(".route(GET(this.path).and(RequestPredicateUtils.idQueryParamPredicate()), getHandler()::getOneById)\n");
+        body.append(".route(GET(this.path).and(RequestPredicateUtils.idQueryParamPredicate()), getHandler()::getOneById)\n");
 //        body.append(".andRoute(POST(this.path).and(RequestPredicateUtils.idQueryParamPredicate()) , getHandler()::postById)\n");
 //        body.append(".andRoute(PUT(this.path), getHandler()::put)\n");
 //        body.append(".andRoute(DELETE(this.path).and(RequestPredicateUtils.idQueryParamPredicate()), getHandler()::deleteById);\n");
