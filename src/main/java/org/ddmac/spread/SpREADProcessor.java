@@ -78,7 +78,7 @@ public class SpREADProcessor extends AbstractProcessor {
 
         body.append("import static org.springframework.web.reactive.function.server.RequestPredicates.*;\n\n");
 
-        body.append("import java.util.Objects;\n\n");
+        body.append("import java.util.Map;\n\n");
 
         body.append("@Configuration(proxyBeanMethods = false)\n");
         body.append("public class ").append(routerClassName).append("{\n\n");
@@ -88,7 +88,7 @@ public class SpREADProcessor extends AbstractProcessor {
         body.append("   @Bean\n");
         body.append("   RouterFunction<ServerResponse> routeBase(").append(handlerClassName).append(" handler").append("){\n");
         body.append("       return RouterFunctions\n");
-        body.append("           .route(GET(this.path).and(queryParamPresent()),handler::getAll)\n");
+        body.append("           .route(GET(this.path).and(noQueryParam()),handler::getAll)\n");
         body.append("           .andRoute(GET(this.path).and(validId()), handler::getOneById)\n");
         body.append("           .andRoute(POST(this.path).and(validId()) , handler::postById)\n");
         body.append("           .andRoute(PUT(this.path), handler::put)\n");
@@ -109,7 +109,11 @@ public class SpREADProcessor extends AbstractProcessor {
     }
 
 
-    public String getPredicates(){
+    /**
+     * Helper function to generate the predicates for the router.
+     * @return String to write to the generated classes.
+     */
+    private String getPredicates(){
         return new StringBuilder()
                 .append("   private RequestPredicate validId(){\n")
                 .append("       return RequestPredicates.queryParam(\"id\",(str) -> {\n")
@@ -121,51 +125,21 @@ public class SpREADProcessor extends AbstractProcessor {
                 .append("           }\n")
                 .append("       });\n")
                 .append("   }\n\n")
-                .append("   private RequestPredicate queryParamPresent(){\n")
-                .append("       return RequestPredicates.queryParam(\"id\", Objects::isNull);\n")
+                .append("   private RequestPredicate noQueryParam(){\n")
+                .append("       return serverWebExchange -> {\n")
+                .append("           Map<String,String> queryParams = serverWebExchange.queryParams().toSingleValueMap();\n")
+                .append("           return queryParams.isEmpty();\n")
+                .append("           };\n")
                 .append("   }\n\n")
                 .toString();
     }
-    /*
-
-    RequestPredicate jawn(){
-        return RequestPredicates.queryParam("id",(str) -> {
-            try {
-                Integer.parseInt(str);
-                return true;
-            } catch (NumberFormatException nfe) {
-                return false;
-            }
-        });
-    }
-
-    RequestPredicate jawn2(){
-        return RequestPredicates.queryParam("id", Objects::isNull);
-    }
-     */
-
-
-    /*
-body.append("Mono<ServerResponse> checkId(ServerRequest request){\n")
-body.append("if(request.queryParam("id").isEmpty()){\n")
-body.append("return ServerResponse\n")
-body.append(".badRequest()\n")
-body.append(".body(\n")
-body.append("BodyInserters  .fromValue(\"Invalid request\")\n")
-body.append(");\n")
-body.append("}\n")
-body.append("return null;\n")
-body.append("}\n")
-    */
 
     /**
      * Creates the handler file.
      *
      * @param rd RepositoryData: Record containing metadata needed to generate the Router.
      */
-    private void generateHandler(
-            RepositoryData rd
-    ) {
+    private void generateHandler(RepositoryData rd) {
         String spreadPackage = rd.interfacePackage() + PACKAGE_SUFFIX;
         String handlerClassName = rd.entityName() + HANDLER_SUFFIX;
 
@@ -197,30 +171,58 @@ body.append("}\n")
         body.append("   ").append(rd.repoSimpleName()).append(" repo;\n\n");
 
         body
-                .append("   public Mono<ServerResponse> getAll(ServerRequest serverRequest){\n")
+                .append("   public Mono<ServerResponse> getAll(ServerRequest request){\n")
                 .append("       return ServerResponse\n")
                 .append("           .ok()\n")
                 .append("           .contentType(MediaType.APPLICATION_JSON)\n")
                 .append("           .body(").append(String.format(getSerializerStatement(rd.serializer()), "repo.findAll()")).append(");\n")
                 .append("   }\n\n");
 
-//        body.append("Mono<ServerResponse> checkId(ServerRequest request){\n");
-//        body.append("if(request.queryParam(\"id\").isEmpty()){\n");
-//        body.append("return ServerResponse\n");
-//        body.append(".badRequest()\n");
-//        body.append(".body(\n");
-//        body.append("BodyInserters.fromValue(\"Invalid request\")\n");
-//        body.append(");\n");
-//        body.append("}\n");
-//        body.append("return null;\n");
-//        body.append("}\n");
+                body
+                .append("   Mono<ServerResponse> getOneById(ServerRequest request){\n")
+                .append("       Long id = Long.parseLong(request.queryParam(\"id\").orElseThrow());\n\n")
+                .append("       return ServerResponse\n")
+                .append("           .ok()\n")
+                .append("           .contentType(MediaType.APPLICATION_JSON)\n")
+                .append("           .body(\n")
+                .append("               ").append(String.format(getSerializerStatement(rd.serializer()),"repo.findById(id).orElseThrow()")).append("\n")
+                .append("           );\n")
+                .append("   }\n\n");
 
-//        body.append("public Mono<ServerResponse> getAll(ServerRequest request){\n");
-//        body.append("return ServerResponse\n");
-//        body.append(".ok()\n");
-//        body.append(".contentType(MediaType.APPLICATION_JSON)\n");
-//        body.append(".body(BodyInserters.fromValue(\n");
-//        body.append("getRepo().findAll()");
+                body.append("   Mono<ServerResponse> postById(ServerRequest request){\n")
+                    .append("       return request.bodyToMono(").append(rd.entityName()).append(".class).flatMap((entity) ->\n")
+                    .append("           ServerResponse\n")
+                    .append("               .ok()\n")
+                    .append("               .contentType(MediaType.APPLICATION_JSON)\n")
+                    .append("               .body(\n")
+                    .append("                   ").append(String.format(getSerializerStatement(rd.serializer()),"repo.save(entity)"))
+                    .append("\n               )\n")
+                    .append("       );\n")
+                    .append("   }\n\n");
+
+        body.append("   Mono<ServerResponse> put(ServerRequest request){\n")
+                .append("       return request.bodyToMono(").append(rd.entityName()).append(".class).flatMap((entity) ->\n")
+                .append("           ServerResponse\n")
+                .append("               .ok()\n")
+                .append("               .contentType(MediaType.APPLICATION_JSON)\n")
+                .append("               .body(\n")
+                .append("                   ").append(String.format(getSerializerStatement(rd.serializer()),"repo.save(entity)")).append("\n")
+                .append("               )\n")
+                .append("       );\n")
+                .append("   }\n\n");
+
+
+        body.append("   Mono<ServerResponse> deleteById(ServerRequest request){\n")
+                .append("       Long id = Long.parseLong(request.queryParam(\"id\").orElseThrow());\n")
+                .append("       repo.deleteById(id);\n")
+                .append("       return ServerResponse\n")
+                .append("           .ok()\n")
+                .append("           .contentType(MediaType.APPLICATION_JSON)\n")
+                .append("           .body(\n")
+                .append("               ").append(String.format(getSerializerStatement(rd.serializer()),"Map.of(\"Deleted\",id)")).append("\n")
+                .append("           );\n")
+                .append("   }\n\n");
+
 
         body.append("}");
 
