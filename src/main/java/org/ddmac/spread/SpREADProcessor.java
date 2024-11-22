@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 
@@ -71,9 +72,13 @@ public class SpREADProcessor extends AbstractProcessor {
         body.append("import org.springframework.context.annotation.Configuration;\n");
         body.append("import org.springframework.web.reactive.function.server.RouterFunction;\n");
         body.append("import org.springframework.web.reactive.function.server.RouterFunctions;\n");
-        body.append("import org.springframework.web.reactive.function.server.ServerResponse;\n\n");
+        body.append("import org.springframework.web.reactive.function.server.ServerResponse;\n");
+        body.append("import org.springframework.web.reactive.function.server.RequestPredicate;\n");
+        body.append("import org.springframework.web.reactive.function.server.RequestPredicates;\n\n");
 
-        body.append("import static org.springframework.web.reactive.function.server.RequestPredicates.GET;\n\n");
+        body.append("import static org.springframework.web.reactive.function.server.RequestPredicates.*;\n\n");
+
+        body.append("import java.util.Objects;\n\n");
 
         body.append("@Configuration(proxyBeanMethods = false)\n");
         body.append("public class ").append(routerClassName).append("{\n\n");
@@ -83,12 +88,13 @@ public class SpREADProcessor extends AbstractProcessor {
         body.append("   @Bean\n");
         body.append("   RouterFunction<ServerResponse> routeBase(").append(handlerClassName).append(" handler").append("){\n");
         body.append("       return RouterFunctions\n");
-        body.append("           .route(GET(this.path),handler::getAll);\n");
-        body.append(".route(GET(this.path).and(RequestPredicateUtils.idQueryParamPredicate()), getHandler()::getOneById)\n");
-//        body.append(".andRoute(POST(this.path).and(RequestPredicateUtils.idQueryParamPredicate()) , getHandler()::postById)\n");
-//        body.append(".andRoute(PUT(this.path), getHandler()::put)\n");
-//        body.append(".andRoute(DELETE(this.path).and(RequestPredicateUtils.idQueryParamPredicate()), getHandler()::deleteById);\n");
+        body.append("           .route(GET(this.path).and(queryParamPresent()),handler::getAll)\n");
+        body.append("           .andRoute(GET(this.path).and(validId()), handler::getOneById)\n");
+        body.append("           .andRoute(POST(this.path).and(validId()) , handler::postById)\n");
+        body.append("           .andRoute(PUT(this.path), handler::put)\n");
+        body.append("           .andRoute(DELETE(this.path).and(validId()), handler::deleteById);\n");
         body.append("       }\n\n");
+        body.append(getPredicates());
         body.append("}");
 
         try {
@@ -101,6 +107,43 @@ public class SpREADProcessor extends AbstractProcessor {
             e.printStackTrace();
         }
     }
+
+
+    public String getPredicates(){
+        return new StringBuilder()
+                .append("   private RequestPredicate validId(){\n")
+                .append("       return RequestPredicates.queryParam(\"id\",(str) -> {\n")
+                .append("           try {\n")
+                .append("               Integer.parseInt(str);\n")
+                .append("               return true;\n")
+                .append("           } catch (NumberFormatException nfe) {\n")
+                .append("               return false;\n")
+                .append("           }\n")
+                .append("       });\n")
+                .append("   }\n\n")
+                .append("   private RequestPredicate queryParamPresent(){\n")
+                .append("       return RequestPredicates.queryParam(\"id\", Objects::isNull);\n")
+                .append("   }\n\n")
+                .toString();
+    }
+    /*
+
+    RequestPredicate jawn(){
+        return RequestPredicates.queryParam("id",(str) -> {
+            try {
+                Integer.parseInt(str);
+                return true;
+            } catch (NumberFormatException nfe) {
+                return false;
+            }
+        });
+    }
+
+    RequestPredicate jawn2(){
+        return RequestPredicates.queryParam("id", Objects::isNull);
+    }
+     */
+
 
     /*
 body.append("Mono<ServerResponse> checkId(ServerRequest request){\n")
