@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "org.ddmac"
-version = "v0.2.2"
+version = "v0.2.6"
 
 repositories {
     mavenCentral()
