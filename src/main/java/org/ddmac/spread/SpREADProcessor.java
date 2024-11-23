@@ -164,7 +164,6 @@ public class SpREADProcessor extends AbstractProcessor {
         body.append("import java.util.Objects;\n\n");
 
         body.append("@Component\n");
-        body.append("@SuppressWarnings(\"unchecked\")\n");
         body.append("public class ").append(handlerClassName).append("{\n\n");
 
         body.append("   @Autowired\n");
