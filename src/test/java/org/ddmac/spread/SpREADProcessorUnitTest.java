@@ -92,12 +92,4 @@ public class SpREADProcessorUnitTest {
         assert(result.contains("BodyInserters.fromValue(%s)"));
     }
 
-    @Test
-    void testRepositoryDataFromElement() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method m = SpREADProcessor.class.getDeclaredMethod("repositoryDataFromElement", Element.class);
-        m.setAccessible(true);
-        element.
-    }
-
-
 }
