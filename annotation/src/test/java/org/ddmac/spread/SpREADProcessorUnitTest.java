@@ -5,7 +5,7 @@ import org.ddmac.spread.enums.Serializer;
 import org.ddmac.spread.repositorydata.RepositoryData;
 import org.junit.jupiter.api.Test;
 
-import javax.lang.model.element.Element;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
