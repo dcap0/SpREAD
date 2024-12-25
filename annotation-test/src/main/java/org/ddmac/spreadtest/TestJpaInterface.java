@@ -1,5 +1,6 @@
-package org.ddmac.spread;
+package org.ddmac.spreadtest;
 
+import org.ddmac.spread.SpREAD;
 import org.ddmac.spread.enums.Serializer;
 import org.springframework.data.jpa.repository.JpaRepository;
 

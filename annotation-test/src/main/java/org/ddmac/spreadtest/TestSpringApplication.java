@@ -1,4 +1,4 @@
-package org.ddmac.spread;
+package org.ddmac.spreadtest;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,6 +1,9 @@
-package org.ddmac.spread;
+package org.ddmac.spreadtest;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+
+import java.util.Objects;
 
 @Entity
 @Table(name="test")
@@ -56,5 +59,18 @@ public class TestEntity {
 
     public void setTestBool(boolean testBool) {
         this.testBool = testBool;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TestEntity that = (TestEntity) o;
+        return testInt == that.testInt && testBool == that.testBool && Objects.equals(id, that.id) && Objects.equals(testString, that.testString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, testString, testInt, testBool);
     }
 }
